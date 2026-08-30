@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة متعلم التعليمية</title>
+    <!-- مكتبة Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --app-navy: #0e1e38;
@@ -18,7 +20,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
         body { background-color: var(--app-bg); color: var(--app-text); font-size: 14px; }
 
-        /* 1. شاشة الدخول والتسجيل */
+        /* شاشة الدخول والتسجيل */
         #auth-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             background: linear-gradient(135deg, #0e1e38 0%, #1e3a8a 100%);
@@ -46,7 +48,7 @@
         }
         .btn-primary:hover { background: #1d4ed8; }
 
-        /* 2. الهيدر وشريط الملاحة */
+        /* الهيدر وشريط الملاحة */
         #main-site { display: none; min-height: 100vh; flex-direction: column; }
         header {
             background: var(--app-navy); color: white; padding: 12px 25px;
@@ -66,7 +68,7 @@
         }
         .nav-tab.active { color: var(--app-blue); border-bottom-color: var(--app-blue); }
 
-        /* 3. التقسيم الرئيسي */
+        /* التقسيم الرئيسي */
         .layout-body { display: flex; max-width: 1300px; margin: 20px auto; width: 100%; gap: 20px; padding: 0 15px; }
         .sidebar { width: 260px; flex-shrink: 0; }
         .main-content { flex-grow: 1; }
@@ -180,7 +182,7 @@
                 
                 <!-- 1. بوابة الطالب -->
                 <div id="student-box" class="section-box active-box">
-                    <h3 style="color: var(--app-navy); margin-bottom: 15px; font-size: 1.1rem;">📚 المكتبة والملازم المرفوعة</h3>
+                    <h3 style="color: var(--app-navy); margin-bottom: 15px; font-size: 1.1rem;">📚 المكتبة والملازم المرفوعة (سحابياً)</h3>
                     <div class="grid-cards" id="student-content-list"></div>
                 </div>
 
@@ -197,7 +199,7 @@
                                 <label>اختر الملف من جهازك (PDF، صورة، مستند)</label>
                                 <input type="file" id="upload-file" accept=".pdf, image/*, .docx, .txt" required>
                             </div>
-                            <button type="submit" class="btn-primary" style="width: auto; padding: 10px 25px;">نشر الملزمة والتحويل الفوري لوضع الطالب 📤</button>
+                            <button type="submit" id="btn-upload-submit" class="btn-primary" style="width: auto; padding: 10px 25px;">نشر الملزمة للجميع 📤</button>
                         </form>
                     </div>
                 </div>
@@ -226,13 +228,6 @@
                         <div class="date">📅 2026-08-30</div>
                         <p style="color: var(--app-subtext);">تنظيم الوقت وإعداد بيئة هادئة هما المفتاح الأساسي لاستيعاب المادة بسهولة وتجنب الإجهاد قبل الامتحانات...</p>
                     </div>
-
-                    <div class="blog-post">
-                        <span class="tag-badge">إرشادات</span>
-                        <h4 style="margin-top:6px;">كيف تستفيد من الملازم الرقمية بشكل فعال؟</h4>
-                        <div class="date">📅 2026-08-28</div>
-                        <p style="color: var(--app-subtext);">الملازم الإلكترونية توفر عليك الوقت والجهد، ننصح بكتابة ملاحظاتك الجانبية أثناء تصفح الملفات لتثبيت المعلومات...</p>
-                    </div>
                 </div>
 
             </div>
@@ -244,8 +239,12 @@
     </div>
 
     <script>
+        // إعداد الربط بـ Supabase
+        const SUPABASE_URL = 'https://batscqiycfmtqqziymwp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhdHNjcWl5Y2ZtdHFxeml5bXdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNzM1MjAsImV4cCI6MjEwMzY0OTUyMH0.wGAdokHRuDqh0QkYn8nzwWLDe-EtLDvKRgTk4zXieO4';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let uploadedPhotoData = '';
-        let uploads = [];
 
         function previewImage(event) {
             const file = event.target.files[0];
@@ -305,40 +304,57 @@
             }
         }
 
-        function uploadTeacherContent(e) {
+        async function uploadTeacherContent(e) {
             e.preventDefault();
+            const btn = document.getElementById('btn-upload-submit');
+            btn.innerText = 'جاري الرفع سحابياً... ⏳';
+            btn.disabled = true;
+
             const title = document.getElementById('upload-title').value;
             const fileInput = document.getElementById('upload-file');
             
             if (fileInput.files.length === 0) return;
-
             const file = fileInput.files[0];
-            const fileURL = URL.createObjectURL(file);
-            const isImage = file.type.startsWith('image/');
 
-            uploads.push({
-                id: Date.now(),
-                title: title,
-                fileName: file.name,
-                fileURL: fileURL,
-                isImage: isImage
-            });
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                const fileURL = evt.target.result;
+                const isImage = file.type.startsWith('image/');
 
-            document.getElementById('upload-title').value = '';
-            document.getElementById('upload-file').value = '';
+                const { data, error } = await supabase
+                    .from('uploads')
+                    .insert([{ title: title, file_name: file.name, file_url: fileURL, is_image: isImage }]);
 
-            renderContents();
-            switchTab('student');
+                btn.innerText = 'نشر الملزمة للجميع 📤';
+                btn.disabled = false;
+
+                if (error) {
+                    alert('حدث خطأ في الرفع: ' + error.message);
+                } else {
+                    document.getElementById('upload-title').value = '';
+                    document.getElementById('upload-file').value = '';
+                    await renderContents();
+                    switchTab('student');
+                }
+            };
+            reader.readAsDataURL(file);
         }
 
-        function renderContents() {
+        async function renderContents() {
             const studentList = document.getElementById('student-content-list');
             const devList = document.getElementById('dev-content-list');
 
-            studentList.innerHTML = '';
+            studentList.innerHTML = '<p style="color:var(--app-subtext);">جاري تحميل البيانات من السحابة... ⏳</p>';
             devList.innerHTML = '';
 
-            if (uploads.length === 0) {
+            const { data: uploads, error } = await supabase
+                .from('uploads')
+                .select('*')
+                .order('id', { ascending: false });
+
+            studentList.innerHTML = '';
+
+            if (error || !uploads || uploads.length === 0) {
                 studentList.innerHTML = '<p style="color:var(--app-subtext);">لا توجد ملازم أو ملفات مرفوعة حالياً.</p>';
                 devList.innerHTML = '<p style="color:var(--app-subtext);">لا توجد عناصر بالحافظة.</p>';
                 return;
@@ -349,11 +365,11 @@
                     <div>
                         <span class="tag-badge">ملزمة دراسية</span>
                         <h4 style="margin-top:6px; color:var(--app-navy);">${item.title}</h4>`;
-                if(item.isImage) {
-                    studentCard += `<img src="${item.fileURL}" alt="${item.fileName}">`;
+                if(item.is_image) {
+                    studentCard += `<img src="${item.file_url}" alt="${item.file_name}">`;
                 }
                 studentCard += `</div>
-                    <a href="${item.fileURL}" download="${item.fileName}" target="_blank" class="btn-download">📥 تحميل/عرض الملف (${item.fileName})</a>
+                    <a href="${item.file_url}" download="${item.file_name}" target="_blank" class="btn-download">📥 تحميل/عرض الملف (${item.file_name})</a>
                 </div>`;
                 studentList.innerHTML += studentCard;
 
@@ -361,18 +377,22 @@
                     <div>
                         <span class="tag-badge" style="background:#fee2e2; color:var(--app-red);">إدارة الملف</span>
                         <h4 style="margin-top:6px; color:var(--app-navy);">${item.title}</h4>
-                        <p style="font-size:0.8rem; color:var(--app-subtext); margin-top:4px;">${item.fileName}</p>
+                        <p style="font-size:0.8rem; color:var(--app-subtext); margin-top:4px;">${item.file_name}</p>
                     </div>
-                    <button class="btn-delete" onclick="deleteContent(${item.id})">🗑️ حذف الملف من المنصة</button>
+                    <button class="btn-delete" onclick="deleteContent(${item.id})">🗑️ حذف الملف سحابياً</button>
                 </div>`;
                 devList.innerHTML += devCard;
             });
         }
 
-        function deleteContent(id) {
-            if (confirm('هل تأكدت من رغبتك في حذف هذا الملف؟')) {
-                uploads = uploads.filter(item => item.id !== id);
-                renderContents();
+        async function deleteContent(id) {
+            if (confirm('هل تأكدت من رغبتك في حذف هذا الملف نهائياً من السحابة؟')) {
+                const { error } = await supabase.from('uploads').delete().eq('id', id);
+                if (error) {
+                    alert('خطأ في الحذف: ' + error.message);
+                } else {
+                    await renderContents();
+                }
             }
         }
 
