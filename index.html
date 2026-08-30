@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة متعلم التعليمية</title>
+    <style>
+        :root {
+            --app-navy: #0e1e38;
+            --app-blue: #2563eb;
+            --app-bg: #f3f4f6;
+            --app-card: #ffffff;
+            --app-text: #1f2937;
+            --app-subtext: #6b7280;
+            --app-red: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
+        body { background-color: var(--app-bg); color: var(--app-text); font-size: 14px; }
+
+        /* 1. شاشة الدخول والتسجيل */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: linear-gradient(135deg, #0e1e38 0%, #1e3a8a 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+        }
+        .auth-card {
+            background: #ffffff; padding: 35px 30px; border-radius: 12px;
+            width: 100%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+        .auth-card h2 { color: var(--app-navy); font-size: 1.5rem; margin-bottom: 5px; text-align: center; font-weight: 700; }
+        .auth-card p { color: var(--app-subtext); text-align: center; margin-bottom: 20px; font-size: 0.9rem; }
+        .form-group { margin-bottom: 15px; text-align: right; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: var(--app-navy); font-size: 0.85rem; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #d1d5db; outline: none; transition: 0.2s;
+        }
+        .form-group input:focus { border-color: var(--app-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .avatar-preview {
+            width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--app-blue);
+            margin: 0 auto 10px auto; object-fit: cover; display: block; background: #e5e7eb;
+        }
+        .btn-primary {
+            width: 100%; padding: 12px; border: none; border-radius: 6px;
+            background: var(--app-blue); color: white; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.95rem;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+
+        /* 2. الهيدر وشريط الملاحة */
+        #main-site { display: none; min-height: 100vh; flex-direction: column; }
+        header {
+            background: var(--app-navy); color: white; padding: 12px 25px;
+            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 800; }
+        .user-nav-profile { display: flex; align-items: center; gap: 10px; }
+        .user-nav-profile img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #ffffff; }
+
+        .portal-navbar {
+            background: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 0 25px;
+            display: flex; gap: 20px; overflow-x: auto;
+        }
+        .nav-tab {
+            padding: 14px 10px; border: none; background: transparent; color: var(--app-subtext);
+            font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap;
+        }
+        .nav-tab.active { color: var(--app-blue); border-bottom-color: var(--app-blue); }
+
+        /* 3. التقسيم الرئيسي */
+        .layout-body { display: flex; max-width: 1300px; margin: 20px auto; width: 100%; gap: 20px; padding: 0 15px; }
+        .sidebar { width: 260px; flex-shrink: 0; }
+        .main-content { flex-grow: 1; }
+
+        .side-card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 15px; margin-bottom: 15px; }
+        .side-card-title { font-weight: 700; color: var(--app-navy); margin-bottom: 10px; font-size: 0.9rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 6px; }
+
+        .student-info-box { text-align: center; }
+        .student-info-box img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 8px; border: 2px solid var(--app-blue); }
+        .student-info-box h3 { font-size: 1rem; color: var(--app-navy); margin-bottom: 2px; }
+        .student-info-box p { font-size: 0.8rem; color: var(--app-subtext); }
+
+        /* الكروت والشبكة */
+        .section-box { display: none; }
+        .active-box { display: block; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+        .info-card {
+            background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 16px;
+            display: flex; flex-direction: column; justify-content: space-between; transition: 0.2s;
+        }
+        .info-card:hover { border-color: var(--app-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .info-card img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin: 10px 0; }
+        .tag-badge { background: #eff6ff; color: var(--app-blue); font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; display: inline-block; width: fit-content; }
+
+        .btn-download { display: block; text-align: center; background: var(--app-blue); color: white; text-decoration: none; padding: 8px; border-radius: 6px; font-weight: 600; margin-top: 10px; font-size: 0.85rem; }
+        .btn-delete { background: var(--app-red); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; width: 100%; }
+
+        /* المدونة */
+        .blog-post { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 20px; margin-bottom: 15px; }
+        .blog-post h4 { font-size: 1.1rem; color: var(--app-navy); margin-bottom: 5px; }
+        .blog-post .date { font-size: 0.75rem; color: var(--app-subtext); margin-bottom: 10px; }
+
+        footer { text-align: center; padding: 20px; color: var(--app-subtext); font-size: 0.8rem; margin-top: auto; border-top: 1px solid #e5e7eb; background: white; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. شاشة الدخول والتسجيل -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2>منصة متعلم</h2>
+            <p>تسجيل الدخول لبوابة التعلم</p>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>نوع الحساب</label>
+                    <select id="user-role" onchange="toggleRoleFields()" required>
+                        <option value="student">👨‍🎓 طالب (Student)</option>
+                        <option value="teacher">👨‍🏫 معلم (Teacher)</option>
+                        <option value="developer">💻 مطور (Developer)</option>
+                    </select>
+                </div>
+
+                <div id="student-fields">
+                    <img id="preview-img" class="avatar-preview" src="https://via.placeholder.com/80?text=صورة" alt="صورة الطالب">
+                    <div class="form-group">
+                        <label>رفع الصورة الشخصية للطالب</label>
+                        <input type="file" id="student-photo" accept="image/*" onchange="previewImage(event)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="user-name" placeholder="أدخل اسمك..." required>
+                </div>
+
+                <button type="submit" class="btn-primary">دخول المنصة 🚀</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. محتوى المنصة الرئيسي -->
+    <div id="main-site">
+        <header>
+            <div class="logo-section">🎓 منصة متعلم التعليمية</div>
+            <div class="user-nav-profile">
+                <span id="header-user-name" style="font-size: 0.85rem; font-weight: 600;"></span>
+                <img id="header-user-avatar" src="https://via.placeholder.com/36" alt="المستخدم">
+            </div>
+        </header>
+
+        <!-- التبويبات والأبواب -->
+        <div class="portal-navbar">
+            <button class="nav-tab active" id="btn-student" onclick="switchTab('student')">📚 صفوفي وملازمي</button>
+            <button class="nav-tab" id="btn-teacher" onclick="switchTab('teacher')">👨‍🏫 بوابة المعلم (رفع ملفات)</button>
+            <button class="nav-tab" id="btn-developer" onclick="switchTab('developer')">💻 لوحة التحكم (المطور)</button>
+            <button class="nav-tab" id="btn-blog" onclick="switchTab('blog')">✍️ المدونة التعليمية</button>
+        </div>
+
+        <div class="layout-body">
+            <!-- Sidebar جانبي -->
+            <div class="sidebar">
+                <div class="side-card student-info-box">
+                    <img id="side-user-avatar" src="https://via.placeholder.com/70" alt="الصورة الشخصية">
+                    <h3 id="side-display-name">اسم الطالب</h3>
+                    <p id="side-role-label">حساب نشط</p>
+                </div>
+
+                <div class="side-card">
+                    <div class="side-card-title">📌 روابط سريعة</div>
+                    <ul style="list-style: none; line-height: 2; font-weight: 600; color: var(--app-navy);">
+                        <li>📖 المقررات الدراسية</li>
+                        <li>📅 جدول المراجعات</li>
+                        <li>📝 الاختبارات والتكاليف</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- المحتوى الرئيسي -->
+            <div class="main-content">
+                
+                <!-- 1. بوابة الطالب -->
+                <div id="student-box" class="section-box active-box">
+                    <h3 style="color: var(--app-navy); margin-bottom: 15px; font-size: 1.1rem;">📚 المكتبة والملازم المرفوعة</h3>
+                    <div class="grid-cards" id="student-content-list"></div>
+                </div>
+
+                <!-- 2. بوابة المعلم -->
+                <div id="teacher-box" class="section-box">
+                    <div style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 20px;">
+                        <h3 style="color: var(--app-navy); margin-bottom: 15px; font-size: 1.1rem;">👨‍🏫 رفع ملزمة أو درس جديد</h3>
+                        <form onsubmit="uploadTeacherContent(event)">
+                            <div class="form-group">
+                                <label>عنوان الملزمة أو الدرس</label>
+                                <input type="text" id="upload-title" placeholder="عنوان الملزمة..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>اختر الملف من جهازك (PDF، صورة، مستند)</label>
+                                <input type="file" id="upload-file" accept=".pdf, image/*, .docx, .txt" required>
+                            </div>
+                            <button type="submit" class="btn-primary" style="width: auto; padding: 10px 25px;">نشر الملزمة والتحويل الفوري لوضع الطالب 📤</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 3. بوابة المطور (رمز السر 55555) -->
+                <div id="developer-box" class="section-box">
+                    <div id="dev-lock" style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 25px; text-align: center; max-width: 360px; margin: 20px auto;">
+                        <h3 style="color: var(--app-navy); margin-bottom: 10px;">🔒 لوحة تحكم المطور</h3>
+                        <input type="password" id="dev-pass" placeholder="كلمة السر (55555)" style="width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid #d1d5db; text-align:center;">
+                        <button class="btn-primary" onclick="checkDevPass()">تأكيد الدخول</button>
+                    </div>
+
+                    <div id="dev-content" style="display: none;">
+                        <h3 style="color: var(--app-red); margin-bottom: 15px; font-size: 1.1rem;">⚡ إدارة وحذف المحتوى المرفوع</h3>
+                        <div class="grid-cards" id="dev-content-list"></div>
+                    </div>
+                </div>
+
+                <!-- 4. قسم المدونة -->
+                <div id="blog-box" class="section-box">
+                    <h3 style="color: var(--app-navy); margin-bottom: 15px; font-size: 1.1rem;">✍️ المقالات والمدونة التعليمية</h3>
+                    
+                    <div class="blog-post">
+                        <span class="tag-badge">نصائح</span>
+                        <h4 style="margin-top:6px;">أفضل 5 طرق للتفوق والتركيز أثناء المذاكرة</h4>
+                        <div class="date">📅 2026-08-30</div>
+                        <p style="color: var(--app-subtext);">تنظيم الوقت وإعداد بيئة هادئة هما المفتاح الأساسي لاستيعاب المادة بسهولة وتجنب الإجهاد قبل الامتحانات...</p>
+                    </div>
+
+                    <div class="blog-post">
+                        <span class="tag-badge">إرشادات</span>
+                        <h4 style="margin-top:6px;">كيف تستفيد من الملازم الرقمية بشكل فعال؟</h4>
+                        <div class="date">📅 2026-08-28</div>
+                        <p style="color: var(--app-subtext);">الملازم الإلكترونية توفر عليك الوقت والجهد، ننصح بكتابة ملاحظاتك الجانبية أثناء تصفح الملفات لتثبيت المعلومات...</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer>
+            <p>© جميع الحقوق محفوظة - منصة متعلم التعليمية</p>
+        </footer>
+    </div>
+
+    <script>
+        let uploadedPhotoData = '';
+        let uploads = [];
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    uploadedPhotoData = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function toggleRoleFields() {
+            const role = document.getElementById('user-role').value;
+            document.getElementById('student-fields').style.display = (role === 'student') ? 'block' : 'none';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const name = document.getElementById('user-name').value;
+            const role = document.getElementById('user-role').value;
+
+            document.getElementById('side-display-name').innerText = name;
+            document.getElementById('header-user-name').innerText = name;
+
+            let photo = uploadedPhotoData || 'https://via.placeholder.com/70?text=User';
+            document.getElementById('side-user-avatar').src = photo;
+            document.getElementById('header-user-avatar').src = photo;
+
+            document.getElementById('side-role-label').innerText = 
+                role === 'student' ? 'طالب مسجل' : (role === 'teacher' ? 'حساب معلم' : 'مطور النظام');
+
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-site').style.display = 'flex';
+
+            renderContents();
+            switchTab(role);
+        }
+
+        function switchTab(role) {
+            document.querySelectorAll('.section-box').forEach(box => box.classList.remove('active-box'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+
+            if(role === 'student') {
+                document.getElementById('student-box').classList.add('active-box');
+                document.getElementById('btn-student').classList.add('active');
+            } else if(role === 'teacher') {
+                document.getElementById('teacher-box').classList.add('active-box');
+                document.getElementById('btn-teacher').classList.add('active');
+            } else if(role === 'developer') {
+                document.getElementById('developer-box').classList.add('active-box');
+                document.getElementById('btn-developer').classList.add('active');
+            } else if(role === 'blog') {
+                document.getElementById('blog-box').classList.add('active-box');
+                document.getElementById('btn-blog').classList.add('active');
+            }
+        }
+
+        function uploadTeacherContent(e) {
+            e.preventDefault();
+            const title = document.getElementById('upload-title').value;
+            const fileInput = document.getElementById('upload-file');
+            
+            if (fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            const fileURL = URL.createObjectURL(file);
+            const isImage = file.type.startsWith('image/');
+
+            uploads.push({
+                id: Date.now(),
+                title: title,
+                fileName: file.name,
+                fileURL: fileURL,
+                isImage: isImage
+            });
+
+            document.getElementById('upload-title').value = '';
+            document.getElementById('upload-file').value = '';
+
+            renderContents();
+            switchTab('student');
+        }
+
+        function renderContents() {
+            const studentList = document.getElementById('student-content-list');
+            const devList = document.getElementById('dev-content-list');
+
+            studentList.innerHTML = '';
+            devList.innerHTML = '';
+
+            if (uploads.length === 0) {
+                studentList.innerHTML = '<p style="color:var(--app-subtext);">لا توجد ملازم أو ملفات مرفوعة حالياً.</p>';
+                devList.innerHTML = '<p style="color:var(--app-subtext);">لا توجد عناصر بالحافظة.</p>';
+                return;
+            }
+
+            uploads.forEach(item => {
+                let studentCard = `<div class="info-card">
+                    <div>
+                        <span class="tag-badge">ملزمة دراسية</span>
+                        <h4 style="margin-top:6px; color:var(--app-navy);">${item.title}</h4>`;
+                if(item.isImage) {
+                    studentCard += `<img src="${item.fileURL}" alt="${item.fileName}">`;
+                }
+                studentCard += `</div>
+                    <a href="${item.fileURL}" download="${item.fileName}" target="_blank" class="btn-download">📥 تحميل/عرض الملف (${item.fileName})</a>
+                </div>`;
+                studentList.innerHTML += studentCard;
+
+                let devCard = `<div class="info-card">
+                    <div>
+                        <span class="tag-badge" style="background:#fee2e2; color:var(--app-red);">إدارة الملف</span>
+                        <h4 style="margin-top:6px; color:var(--app-navy);">${item.title}</h4>
+                        <p style="font-size:0.8rem; color:var(--app-subtext); margin-top:4px;">${item.fileName}</p>
+                    </div>
+                    <button class="btn-delete" onclick="deleteContent(${item.id})">🗑️ حذف الملف من المنصة</button>
+                </div>`;
+                devList.innerHTML += devCard;
+            });
+        }
+
+        function deleteContent(id) {
+            if (confirm('هل تأكدت من رغبتك في حذف هذا الملف؟')) {
+                uploads = uploads.filter(item => item.id !== id);
+                renderContents();
+            }
+        }
+
+        function checkDevPass() {
+            const pass = document.getElementById('dev-pass').value;
+            if (pass === '55555') {
+                document.getElementById('dev-lock').style.display = 'none';
+                document.getElementById('dev-content').style.display = 'block';
+                renderContents();
+            } else {
+                alert('كلمة السر خاطئة!');
+            }
+        }
+    </script>
+</body>
+</html>
